@@ -1,0 +1,87 @@
+@model TicketListViewModel
+@{
+    ViewData["Title"] = "Tickets";
+    var f = Model.Filter;
+    var scopes = new[] { ("mine", "Assigned to me", "bi-person-check"), ("unassigned", "Unassigned", "bi-inbox"), ("all", "All tickets", "bi-collection") };
+}
+<div class="container-fluid px-lg-4 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+            <h1 class="page-title mb-1">@(Model.User.IsCustomer ? "My Tickets" : "Support Tickets")</h1>
+            <p class="text-muted mb-0">@Model.TotalCount ticket(s) · updates appear live</p>
+        </div>
+        @if (Model.User.IsCustomer)
+        {
+            <a asp-action="Create" class="btn btn-gradient"><i class="bi bi-plus-lg me-1"></i> New Ticket</a>
+        }
+    </div>
+
+    @if (Model.User.IsStaff)
+    {
+        <ul class="nav scope-tabs mb-3">
+            @foreach (var (key, label, icon) in scopes)
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(f.Scope == key ? "active" : "")" asp-action="Index" asp-route-scope="@key"><i class="bi @icon me-1"></i>@label</a>
+                </li>
+            }
+        </ul>
+    }
+
+    <form method="get" asp-action="Index" class="card glass-card mb-3">
+        <div class="card-body row g-2 align-items-center">
+            <input type="hidden" name="scope" value="@f.Scope" />
+            <div class="col-lg-4">
+                <div class="input-icon"><i class="bi bi-search"></i><input type="text" name="search" value="@f.Search" class="form-control" placeholder="Search subject, ticket # or customer…" /></div>
+            </div>
+            <div class="col-6 col-lg-2">
+                <select name="status" class="form-select" asp-items="Html.GetEnumSelectList<TicketStatus>()"><option value="">All statuses</option></select>
+            </div>
+            <div class="col-6 col-lg-2">
+                <select name="priority" class="form-select" asp-items="Html.GetEnumSelectList<TicketPriority>()"><option value="">All priorities</option></select>
+            </div>
+            <div class="col-6 col-lg-2">
+                <select name="category" class="form-select" asp-items="Html.GetEnumSelectList<TicketCategory>()"><option value="">All categories</option></select>
+            </div>
+            <div class="col-6 col-lg-2 d-flex gap-2">
+                <button class="btn btn-gradient flex-grow-1" type="submit"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <a asp-action="Index" asp-route-scope="@f.Scope" class="btn btn-light border" title="Reset"><i class="bi bi-x-lg"></i></a>
+            </div>
+        </div>
+    </form>
+
+    <div class="card glass-card overflow-hidden">
+        <partial name="_TicketTable" model="Model.Items" />
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                @for (var p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == f.Page ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@p" asp-route-scope="@f.Scope" asp-route-search="@f.Search"
+                           asp-route-status="@f.Status" asp-route-priority="@f.Priority" asp-route-category="@f.Category">@p</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
+@section Scripts {
+    <script>
+        // keep selected filter values
+        (function () {
+            const params = new URLSearchParams(location.search);
+            ["status", "priority", "category"].forEach(n => {
+                const el = document.querySelector(`select[name="${n}"]`);
+                if (el && params.get(n)) {
+                    const v = params.get(n);
+                    const opt = [...el.options].find(o => o.value === v || o.text.replace(/\s/g, "") === v);
+                    if (opt) el.value = opt.value;
+                }
+            });
+        })();
+    </script>
+}

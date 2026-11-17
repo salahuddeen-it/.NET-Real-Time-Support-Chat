@@ -1,0 +1,171 @@
+@model TicketDetailsViewModel
+@{
+    var t = Model.Ticket;
+    var u = Model.User;
+    ViewData["Title"] = $"{t.TicketNumber} · {t.Subject}";
+    var counterpart = u.IsCustomer ? t.AssignedAgent : t.Customer;
+    var counterpartOnline = u.IsCustomer ? Model.AgentOnline : Model.CustomerOnline;
+}
+<div class="container-fluid px-lg-4 py-3">
+    <a asp-action="Index" class="back-link"><i class="bi bi-arrow-left"></i> Tickets</a>
+
+    <div class="row g-3 ticket-layout">
+        <!-- ================= CHAT ================= -->
+        <div class="col-xl-8">
+            <div class="chat-card" id="chatApp" data-ticket-id="@t.Id" data-user-id="@u.Id" data-closed="@(t.Status == TicketStatus.Closed ? "true" : "false")">
+                <div class="chat-header">
+                    @if (counterpart is not null)
+                    {
+                        <span class="avatar presence @(counterpartOnline ? "online" : "")" data-presence="@counterpart.Id" style="background:@UI.AvatarColor(counterpart.Id)">@UI.Initials(counterpart.FullName)</span>
+                        <div class="overflow-hidden">
+                            <div class="fw-bold text-truncate">@counterpart.FullName</div>
+                            <div class="small text-muted text-truncate" id="typingIndicator">@(u.IsCustomer ? "Support Agent" : "Customer") · @t.TicketNumber</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="avatar" style="background:#94a3b8"><i class="bi bi-hourglass-split"></i></span>
+                        <div>
+                            <div class="fw-bold" id="counterpartName">Waiting for an agent…</div>
+                            <div class="small text-muted" id="typingIndicator">@t.TicketNumber · an agent will join soon</div>
+                        </div>
+                    }
+                    <span class="status-pill @UI.StatusClass(t.Status) ms-auto" id="statusBadge">@UI.StatusLabel(t.Status)</span>
+                </div>
+
+                <div class="chat-body" id="messageList">
+                    <div class="chat-start">
+                        <span class="cat-icon"><i class="bi @UI.CategoryIcon(t.Category)"></i></span>
+                        <div class="fw-bold mt-2">@t.Subject</div>
+                        <div class="small text-muted">Ticket opened <time data-utc="@UI.UtcIso(t.CreatedAt)" data-format="full"></time></div>
+                    </div>
+                </div>
+
+                <div class="typing-line" id="typingLine"><span class="dots"><span></span><span></span><span></span></span> <span id="typingName"></span> is typing…</div>
+
+                <div class="closed-banner @(Model.CanReply ? "d-none" : "")" id="closedBanner">
+                    <i class="bi bi-lock"></i> This ticket is closed. Reopen it to continue the conversation.
+                </div>
+
+                <div class="composer @(Model.CanReply ? "" : "d-none")" id="composer">
+                    <div class="file-previews" id="filePreviews"></div>
+                    <div class="composer-row">
+                        <button type="button" class="btn composer-btn" id="attachBtn" title="Attach files"><i class="bi bi-paperclip"></i></button>
+                        <input type="file" id="fileInput" multiple class="d-none" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.log" />
+                        <textarea id="messageInput" rows="1" maxlength="4000" placeholder="Type a message…  (Enter to send, Shift+Enter for new line)"></textarea>
+                        <button type="button" class="btn btn-gradient send-btn" id="sendBtn" title="Send"><i class="bi bi-send-fill"></i></button>
+                    </div>
+                    <div class="composer-error d-none" id="composerError"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SIDE PANEL ================= -->
+        <div class="col-xl-4">
+            <div class="card glass-card mb-3">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="ticket-no">@t.TicketNumber</span>
+                        <span class="prio-pill @UI.PriorityClass(t.Priority)">@t.Priority priority</span>
+                    </div>
+                    <h5 class="fw-bold mb-3">@t.Subject</h5>
+                    <dl class="info-list mb-0">
+                        <dt>Status</dt>
+                        <dd><span class="status-pill @UI.StatusClass(t.Status)" id="statusBadgeSide">@UI.StatusLabel(t.Status)</span></dd>
+                        <dt>Category</dt>
+                        <dd><i class="bi @UI.CategoryIcon(t.Category) me-1"></i>@UI.CategoryLabel(t.Category)</dd>
+                        <dt>Customer</dt>
+                        <dd>
+                            <span class="avatar xs presence @(Model.CustomerOnline ? "online" : "")" data-presence="@t.CustomerId" style="background:@UI.AvatarColor(t.CustomerId)">@UI.Initials(t.Customer.FullName)</span>
+                            @t.Customer.FullName
+                            @if (u.IsStaff) { <div class="small text-muted">@t.Customer.Email</div> }
+                        </dd>
+                        <dt>Assigned agent</dt>
+                        <dd id="assignedAgent">@(t.AssignedAgent?.FullName ?? "Not assigned yet")</dd>
+                        <dt>Created</dt>
+                        <dd><time data-utc="@UI.UtcIso(t.CreatedAt)" data-format="full"></time></dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Status actions -->
+            <div class="card glass-card mb-3">
+                <div class="card-body p-4">
+                    <h6 class="section-title mb-3"><i class="bi bi-flag me-1"></i> Ticket status</h6>
+                    @if (u.IsStaff)
+                    {
+                        <form asp-action="UpdateStatus" asp-route-id="@t.Id" method="post" class="d-flex gap-2">
+                            <select name="status" class="form-select" asp-items="Html.GetEnumSelectList<TicketStatus>()" id="statusSelect"></select>
+                            <button type="submit" class="btn btn-gradient px-3">Update</button>
+                        </form>
+                        <script>document.getElementById("statusSelect").value = "@((int)t.Status)";</script>
+                    }
+                    else if (t.Status is TicketStatus.Resolved or TicketStatus.Closed)
+                    {
+                        <p class="small text-muted">Still need help? Reopen the ticket to continue.</p>
+                        <form asp-action="UpdateStatus" asp-route-id="@t.Id" method="post">
+                            <input type="hidden" name="status" value="@TicketStatus.Open" />
+                            <button type="submit" class="btn btn-gradient w-100"><i class="bi bi-arrow-counterclockwise me-1"></i> Reopen Ticket</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <p class="small text-muted">Problem solved? You can close this ticket.</p>
+                        <form asp-action="UpdateStatus" asp-route-id="@t.Id" method="post" onsubmit="return confirm('Close this ticket?');">
+                            <input type="hidden" name="status" value="@TicketStatus.Closed" />
+                            <button type="submit" class="btn btn-outline-danger w-100"><i class="bi bi-check2-circle me-1"></i> Close Ticket</button>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <!-- Assignment (staff) -->
+            @if (u.IsStaff)
+            {
+                <div class="card glass-card">
+                    <div class="card-body p-4">
+                        <h6 class="section-title mb-3"><i class="bi bi-person-gear me-1"></i> Agent assignment</h6>
+                        @if (u.IsAdmin)
+                        {
+                            <form asp-action="Assign" asp-route-id="@t.Id" method="post" class="d-flex gap-2 mb-3">
+                                <select name="agentId" class="form-select">
+                                    @foreach (var a in Model.Agents)
+                                    {
+                                        <option value="@a.Id" selected="@(a.Id == t.AssignedAgentId)">@a.FullName (@a.ActiveTickets active)@(a.IsOnline ? " • online" : "")</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-gradient px-3">Assign</button>
+                            </form>
+                        }
+                        else if (t.AssignedAgentId != u.Id)
+                        {
+                            <form asp-action="Assign" asp-route-id="@t.Id" method="post" class="mb-3">
+                                <button type="submit" class="btn btn-gradient w-100"><i class="bi bi-hand-index-thumb me-1"></i> Take this ticket</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <p class="small text-success fw-semibold"><i class="bi bi-check-circle me-1"></i> You are handling this ticket.</p>
+                        }
+
+                        <div class="small text-muted mb-2">Team availability</div>
+                        @foreach (var a in Model.Agents)
+                        {
+                            <div class="agent-row">
+                                <span class="avatar xs presence @(a.IsOnline ? "online" : "")" data-presence="@a.Id" style="background:@UI.AvatarColor(a.Id)">@UI.Initials(a.FullName)</span>
+                                <span class="small flex-grow-1">@a.FullName</span>
+                                <span class="badge rounded-pill text-bg-light">@a.ActiveTickets</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script id="initialMessages" type="application/json">@Html.Raw(Json.Serialize(Model.Messages))</script>
+
+@section Scripts {
+    <script src="~/js/chat.js" asp-append-version="true"></script>
+}

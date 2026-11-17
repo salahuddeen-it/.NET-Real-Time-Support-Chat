@@ -1,0 +1,56 @@
+@model List<TicketListItem>
+@if (!Model.Any())
+{
+    <div class="empty-state text-center py-5">
+        <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+        <h6 class="fw-bold">No tickets found</h6>
+        <p class="text-muted small mb-0">Tickets will appear here.</p>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table ticket-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Customer</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Agent</th>
+                    <th class="text-end">Last activity</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr class="clickable-row" data-href="/Tickets/Details/@t.Id">
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="cat-icon"><i class="bi @UI.CategoryIcon(t.Category)"></i></span>
+                                <div class="overflow-hidden">
+                                    <a href="/Tickets/Details/@t.Id" class="fw-semibold text-dark text-decoration-none d-block text-truncate" style="max-width:340px">@t.Subject</a>
+                                    <span class="small text-muted">@t.TicketNumber · @UI.CategoryLabel(t.Category) · <i class="bi bi-chat"></i> @t.MessageCount</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="small">@t.CustomerName</td>
+                        <td><span class="prio-pill @UI.PriorityClass(t.Priority)">@t.Priority</span></td>
+                        <td><span class="status-pill @UI.StatusClass(t.Status)">@UI.StatusLabel(t.Status)</span></td>
+                        <td class="small">
+                            @if (t.AgentName is null)
+                            {
+                                <span class="text-muted fst-italic">Unassigned</span>
+                            }
+                            else
+                            {
+                                @t.AgentName
+                            }
+                        </td>
+                        <td class="text-end small text-muted"><time data-utc="@UI.UtcIso(t.LastActivityAt)"></time></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

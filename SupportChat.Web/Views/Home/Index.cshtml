@@ -1,0 +1,38 @@
+@{ ViewData["Title"] = "Real-time customer support"; }
+<section class="landing">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <span class="hero-pill"><span class="live-dot"></span> Live support powered by SignalR</span>
+                <h1 class="hero-title">Customer support that happens <span class="text-gradient">in real time</span></h1>
+                <p class="hero-sub">Create a ticket and chat instantly with a support agent. Share screenshots and files, track the status of your request and get notified the moment someone replies.</p>
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-gradient btn-lg px-4">Get Started <i class="bi bi-arrow-right ms-1"></i></a>
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-light border btn-lg px-4">Login</a>
+                </div>
+                <div class="row g-3 mt-4">
+                    <div class="col-6"><div class="feature"><i class="bi bi-lightning-charge"></i> Instant messaging</div></div>
+                    <div class="col-6"><div class="feature"><i class="bi bi-paperclip"></i> File attachments</div></div>
+                    <div class="col-6"><div class="feature"><i class="bi bi-person-check"></i> Smart agent assignment</div></div>
+                    <div class="col-6"><div class="feature"><i class="bi bi-bell"></i> Live notifications</div></div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="preview-chat">
+                    <div class="preview-head">
+                        <span class="avatar sm" style="background:#0891b2">SA</span>
+                        <div><div class="fw-semibold">Sara Ahmed</div><div class="small text-success"><span class="live-dot"></span> Online · Support Agent</div></div>
+                        <span class="status-pill st-progress ms-auto">In Progress</span>
+                    </div>
+                    <div class="preview-body">
+                        <div class="bubble theirs">Hello! 👋 How can I help you today?</div>
+                        <div class="bubble mine">My payment failed but the amount was deducted.</div>
+                        <div class="bubble theirs">Sorry about that! Could you share a screenshot of the transaction?</div>
+                        <div class="bubble mine"><i class="bi bi-image me-1"></i> receipt.png</div>
+                        <div class="typing-preview"><span></span><span></span><span></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

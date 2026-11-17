@@ -1,0 +1,69 @@
+@model CreateTicketViewModel
+@{ ViewData["Title"] = "New Ticket"; }
+<div class="container py-4 py-lg-5" style="max-width:860px">
+    <a asp-action="Index" class="back-link"><i class="bi bi-arrow-left"></i> My tickets</a>
+    <h1 class="page-title mb-1">Create a support ticket</h1>
+    <p class="text-muted">Describe your issue and an available agent will be assigned automatically.</p>
+
+    <div class="card glass-card">
+        <div class="card-body p-4 p-md-5">
+            <form asp-action="Create" method="post" enctype="multipart/form-data" id="createForm">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Subject" class="form-label fw-semibold"></label>
+                    <input asp-for="Subject" class="form-control form-control-lg" placeholder="e.g. Payment failed but amount was deducted" />
+                    <span asp-validation-for="Subject" class="text-danger small"></span>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Category" class="form-label fw-semibold"></label>
+                        <select asp-for="Category" class="form-select" asp-items="Html.GetEnumSelectList<TicketCategory>()"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Priority" class="form-label fw-semibold"></label>
+                        <select asp-for="Priority" class="form-select" asp-items="Html.GetEnumSelectList<TicketPriority>()"></select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label fw-semibold"></label>
+                    <textarea asp-for="Description" class="form-control" rows="6" placeholder="Please include as much detail as possible: what happened, when, any error messages…"></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Attachments <span class="text-muted fw-normal">(optional · up to 5 files, 10 MB each)</span></label>
+                    <label class="file-drop" for="Attachments">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                        <span id="fileDropText">Click or drop screenshots, PDFs or documents here</span>
+                        <input type="file" id="Attachments" name="Attachments" multiple class="d-none"
+                               accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.log" />
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-gradient btn-lg w-100" id="submitBtn"><i class="bi bi-send me-2"></i>Submit Ticket</button>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        const input = document.getElementById("Attachments");
+        const text = document.getElementById("fileDropText");
+        const drop = document.querySelector(".file-drop");
+        input.addEventListener("change", () => {
+            const n = input.files.length;
+            text.textContent = n ? [...input.files].map(f => f.name).join(", ") : "Click or drop screenshots, PDFs or documents here";
+            drop.classList.toggle("has-file", n > 0);
+        });
+        ["dragover", "dragenter"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add("drag"); }));
+        ["dragleave", "drop"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove("drag"); }));
+        drop.addEventListener("drop", ev => { input.files = ev.dataTransfer.files; input.dispatchEvent(new Event("change")); });
+        document.getElementById("createForm").addEventListener("submit", () => {
+            const b = document.getElementById("submitBtn");
+            setTimeout(() => { b.disabled = true; b.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting…'; }, 0);
+        });
+    </script>
+}

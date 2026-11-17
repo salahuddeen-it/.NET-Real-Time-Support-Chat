@@ -1,0 +1,100 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var u = Model.User;
+    var total = Math.Max(1, Model.StatusBreakdown.Values.Sum());
+}
+<div class="container-fluid px-lg-4 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+            <h1 class="page-title mb-1">Hello, @u.FullName.Split(' ')[0] 👋</h1>
+            <p class="text-muted mb-0">
+                @(u.IsCustomer ? "Here is an overview of your support requests." : u.IsAgent ? "Here is your support queue for today." : "Here is how your support team is doing.")
+            </p>
+        </div>
+        @if (u.IsCustomer)
+        {
+            <a asp-controller="Tickets" asp-action="Create" class="btn btn-gradient"><i class="bi bi-plus-lg me-1"></i> New Ticket</a>
+        }
+        else
+        {
+            <a asp-controller="Tickets" asp-action="Index" asp-route-scope="unassigned" class="btn btn-gradient"><i class="bi bi-inbox me-1"></i> Open Queue</a>
+        }
+    </div>
+
+    <div class="row g-3 mb-4">
+        @foreach (var c in Model.Cards)
+        {
+            <div class="col-sm-6 col-xl-3">
+                <div class="card glass-card stat-card h-100">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <div class="stat-icon @c.Color"><i class="bi @c.Icon"></i></div>
+                        <div>
+                            <div class="stat-value">@c.Value</div>
+                            <div class="stat-label">@c.Label</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row g-4">
+        <div class="@(u.IsCustomer ? "col-12" : "col-xl-8")">
+            <div class="card glass-card h-100">
+                <div class="card-body p-0">
+                    <div class="d-flex justify-content-between align-items-center p-4 pb-2">
+                        <h6 class="section-title mb-0">@(u.IsAdmin ? "Latest activity" : u.IsAgent ? "My recent tickets" : "My recent tickets")</h6>
+                        <a asp-controller="Tickets" asp-action="Index" class="small fw-semibold text-decoration-none">View all <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                    <partial name="_TicketTable" model="Model.RecentTickets" />
+                </div>
+            </div>
+        </div>
+
+        @if (!u.IsCustomer)
+        {
+            <div class="col-xl-4">
+                <div class="card glass-card mb-4">
+                    <div class="card-body p-4">
+                        <h6 class="section-title mb-3">Tickets by status</h6>
+                        @foreach (var s in Model.StatusBreakdown)
+                        {
+                            var pct = s.Value * 100 / total;
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="status-pill @UI.StatusClass(s.Key)">@UI.StatusLabel(s.Key)</span>
+                                    <span class="fw-bold">@s.Value</span>
+                                </div>
+                                <div class="progress slim-progress"><div class="progress-bar bar-@UI.StatusClass(s.Key)" style="width:@pct%"></div></div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (u.IsAdmin)
+                {
+                    <div class="card glass-card">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="section-title mb-0">Agents</h6>
+                                <a asp-controller="Admin" asp-action="Agents" class="small fw-semibold text-decoration-none">Manage</a>
+                            </div>
+                            @foreach (var a in Model.Agents)
+                            {
+                                <div class="agent-row">
+                                    <span class="avatar sm presence @(a.IsOnline ? "online" : "")" data-presence="@a.Id" style="background:@UI.AvatarColor(a.Id)">@UI.Initials(a.FullName)</span>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold small">@a.FullName</div>
+                                        <div class="text-muted" style="font-size:.75rem">@a.ActiveTickets active · @a.ResolvedTickets resolved</div>
+                                    </div>
+                                </div>
+                            }
+                            @if (!Model.Agents.Any()) { <p class="text-muted small mb-0">No agents yet.</p> }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
